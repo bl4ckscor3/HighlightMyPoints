@@ -18,7 +18,7 @@
     const color = "#461b1b"; //the highlight color
     const elementSeen = "highlighterSeen";
     const elementMarked = "highlighterMarked";
-    const accUpdate = setInterval(updateName, 1000); //find the account name
+    const accUpdate = setInterval(updateName, 1000); //find the account name so the correct messages can be highlighted
     const highlightStyle = document.createElement("style");
 
     highlightStyle.innerHTML = "." + elementMarked + " > .dialogNobody {background-color:" + color +"}"; //css for highlighting messages
@@ -30,7 +30,7 @@
             var chatMsgs = document.getElementsByClassName("chatMsg"); //get all chat messages
 
             for(var msg of chatMsgs) { //loop through them
-                if(!msg.className.includes(elementSeen)) { //no need to check the message's content, it has already been checked before
+                if(!msg.classList.contains(elementSeen)) { //no need to check the message's content, it has already been checked before
                     msg.classList.add(elementSeen); //mark the chat message as seen
 
                     if(msg.innerText.trim().startsWith(acc)) { //if the first word of the chat message is the account name...
@@ -41,11 +41,11 @@
         }
     }
 
-    function updateName() { //find the account name so the correct messages can be highlighted
+    function updateName() { //needed because the name loads in a little after this script loads
         if(!acc) { //account name has not been found yet, try to find it
             acc = document.getElementById("acc").innerText.trim();
-        } else { //account name has been found, stop calling this function
-            clearInterval(accUpdate);
+        } else {
+            clearInterval(accUpdate); //account name has been found, stop calling this function
         }
     }
 })();
