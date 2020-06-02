@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Highlight My Points
 // @namespace    bl4ckscor3
-// @version      1.0
+// @version      1.1
 // @description  Highlights EyeWire chat messages announcing points the current user has earned.
 // @author       bl4ckscor3
 // @match        https://eyewire.org/
@@ -16,10 +16,10 @@
 
     var acc = document.getElementById("acc").innerText; //the account name
     const color = "#461b1b"; //the highlight color
-    const elementSeen = "highlighterSeen";
     const elementMarked = "highlighterMarked";
     const accUpdate = setInterval(updateName, 1000); //find the account name so the correct messages can be highlighted
     const highlightStyle = document.createElement("style");
+    var messageCount = 0;
 
     highlightStyle.innerHTML = "." + elementMarked + " > .dialogNobody {background-color:" + color +"}"; //css for highlighting messages
     document.head.appendChild(highlightStyle); //add the style tag containing the highlight css to the head
@@ -29,14 +29,16 @@
         if(acc) {
             var chatMsgs = document.getElementsByClassName("chatMsg"); //get all chat messages
 
-            for(var msg of chatMsgs) { //loop through them
-                if(!msg.classList.contains(elementSeen)) { //no need to check the message's content, it has already been checked before
-                    msg.classList.add(elementSeen); //mark the chat message as seen
+            if(messageCount < chatMsgs.length) { //only loop if there are new chat messages
+                for(var i = messageCount; i < chatMsgs.length; i++) { //loop through the messages that have not been checked before
+                    var msg = chatMsgs.item(i);
 
                     if(msg.innerText.trim().startsWith(acc)) { //if the first word of the chat message is the account name...
                         msg.classList.add(elementMarked); //...mark the element so it can be highlighted
                     }
                 }
+
+                messageCount = chatMsgs.length; //remember the index of the last checked message, so already checked messages don't get checked again
             }
         }
     }
