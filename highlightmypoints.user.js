@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Highlight My Points
 // @namespace    bl4ckscor3
-// @version      1.1
+// @version      1.2
 // @description  Highlights EyeWire chat messages announcing points the current user has earned.
 // @author       bl4ckscor3
 // @match        https://eyewire.org/
@@ -19,27 +19,30 @@
     const elementMarked = "highlighterMarked";
     const accUpdate = setInterval(updateName, 1000); //find the account name so the correct messages can be highlighted
     const highlightStyle = document.createElement("style");
-    var messageCount = 0;
+    const chatObserver = new MutationObserver(highlightMessages);
 
-    highlightStyle.innerHTML = "." + elementMarked + " > .dialogNobody {background-color:" + color +"}"; //css for highlighting messages
+    highlightStyle.innerHTML = "." + elementMarked + " > .dialogNobody {background-color:" + color + "}"; //css for highlighting messages
     document.head.appendChild(highlightStyle); //add the style tag containing the highlight css to the head
-    setInterval(highlightMessages, 500); //set an interval for the highlightMessages function so it can, well, highlight messages
+    chatObserver.observe(document.getElementsByClassName("chatMsgContainer")[0], { //observe changes in the element with the chatMsgContainer class
+        childList: true, //but only changes to the children
+        attributes: false,
+        characterData: false,
+        subtree: false
+    });
 
-    function highlightMessages() {
-        if(acc) {
-            var chatMsgs = document.getElementsByClassName("chatMsg"); //get all chat messages
+    function highlightMessages(mutations){
+        if(acc) { //only check if the account name is set
+            var mutation = mutations[0];
 
-            if(messageCount < chatMsgs.length) { //only loop if there are new chat messages
-                for(var i = messageCount; i < chatMsgs.length; i++) { //loop through the messages that have not been checked before
-                    var msg = chatMsgs.item(i);
-
-                    if(msg.innerText.trim().startsWith(acc + " ")) { //if the first word of the chat message is the account name...
-                        msg.classList.add(elementMarked); //...mark the element so it can be highlighted
-                    }
-                }
-
-                messageCount = chatMsgs.length; //remember the index of the last checked message, so already checked messages don't get checked again
+            if(!mutation.addedNodes) { //if no node has been added, don't do anything
+                return;
             }
+
+            mutation.addedNodes.forEach(function(msg) { //for each added node (chat message)
+                if(msg.innerText.trim().startsWith(acc + " ")) { //if the first word of the chat message is the account name...
+                    msg.classList.add(elementMarked); //...mark the element so it can be highlighted
+                }
+            });
         }
     }
 
