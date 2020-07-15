@@ -33,7 +33,7 @@
                 for(var i = messageCount; i < chatMsgs.length; i++) { //loop through the messages that have not been checked before
                     var msg = chatMsgs.item(i);
 
-                    if(msg.innerText.trim().startsWith(acc)) { //if the first word of the chat message is the account name...
+                    if(msg.innerText.trim().startsWith(acc + " ")) { //if the first word of the chat message is the account name...
                         msg.classList.add(elementMarked); //...mark the element so it can be highlighted
                     }
                 }
