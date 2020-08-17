@@ -64,9 +64,6 @@
 
                     if(trimmed.startsWith(acc + " ")) { //only check if the message is about the current user, doesn't make sense to check otherwise
                         for(let key of settings.keys()) { //loop through all settings
-                            console.log(key);
-                            console.log(regexes.get(key).test(trimmed));
-                            console.log(settings.get(key));
                             if(regexes.get(key).test(trimmed)) { //if the message matches the setting's regex...
                                 if(settings.get(key)) { //...check if the message is enabled...
                                     msg.classList.add(elementMarked); //...and if so, mark the element so it can be highlighted
@@ -115,8 +112,6 @@
             var setting = document.createElement("div");
             var checkbox = document.createElement("checkbox");
 
-            console.log(id);
-            console.log(state);
             setting.setAttribute("class", "setting");
             setting.innerHTML = `<span>${description}</span>`;
             checkbox.setAttribute("class", `checkbox ${state ? "on" : "off"}`);
