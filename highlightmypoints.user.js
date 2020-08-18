@@ -1,14 +1,15 @@
 // ==UserScript==
 // @name         Highlight My Points
 // @namespace    bl4ckscor3
-// @version      1.3
+// @version      1.4
 // @description  Highlights EyeWire chat messages announcing points the current user has earned.
 // @author       bl4ckscor3
 // @match        https://eyewire.org/
 // @grant        none
-// @updateURL   https://raw.githubusercontent.com/bl4ckscor3/HighlightMyPoints/master/highlightmypoints.user.js
-// @downloadURL https://raw.githubusercontent.com/bl4ckscor3/HighlightMyPoints/master/highlightmypoints.user.js
-// @homepageURL https://github.com/bl4ckscor3/HighlightMyPoints
+// @updateURL    https://raw.githubusercontent.com/bl4ckscor3/HighlightMyPoints/master/highlightmypoints.user.js
+// @downloadURL  https://raw.githubusercontent.com/bl4ckscor3/HighlightMyPoints/master/highlightmypoints.user.js
+// @homepageURL  https://github.com/bl4ckscor3/HighlightMyPoints
+// @require      https://chrisraven.github.io/EyeWire-Custom-Highlight/spectrum.js
 // ==/UserScript==
 
 /* globals $ account */
@@ -27,13 +28,12 @@
 
     function main() {
         const acc = account.account.username;
-        const color = "#461b1b"; //the highlight color
-        const elementMarked = "highlighterMarked";
         const highlightStyle = document.createElement("style");
         const chatObserver = new MutationObserver(highlightMessages);
         const settingsCheck = setInterval(initSettings, 100);
         const settings = new Map();
         const regexes = new Map();
+        const colors = new Map();
         const normalRegex = new RegExp(`${acc} earned [0-9]+ points`);
         const trailblazeRegex = new RegExp(`${acc} trailblazed a cube!`);
         const retroRegex = new RegExp(`${acc} earned [0-9]+ points from trailblazing`);
@@ -42,8 +42,9 @@
         const achievementRegex = new RegExp(`${acc} earned the .* achievement!`);
         const otherRegex = new RegExp(`${acc} .+`);
 
-        highlightStyle.innerHTML = "." + elementMarked + " > .dialogNobody {background-color:" + color + "}"; //css for highlighting messages
+        highlightStyle.setAttribute("id", "highlight-my-points-style");
         document.head.appendChild(highlightStyle); //add the style tag containing the highlight css to the head
+        addSpectrumCSS();
         chatObserver.observe(document.getElementsByClassName("chatMsgContainer")[0], { //observe changes in the element with the chatMsgContainer class
             childList: true, //but only changes to the children
             attributes: false,
@@ -66,7 +67,7 @@
                         for(let key of settings.keys()) { //loop through all settings
                             if(regexes.get(key).test(trimmed)) { //if the message matches the setting's regex...
                                 if(settings.get(key)) { //...check if the message is enabled...
-                                    msg.classList.add(elementMarked); //...and if so, mark the element so it can be highlighted
+                                    msg.classList.add(key + "-marked"); //...and if so, mark the element so it can be highlighted
                                 }
 
                                 return; //if it's not enabled, stop looping through settings, otherwhise the setting for "/me"-messages will take effect
@@ -105,10 +106,11 @@
 
             addToggleSetting(category, "highlight-achievements", "Highlight achievement messages", achievementRegex);
             addToggleSetting(category, "highlight-me", 'Highlight "/me"-messages', otherRegex);
+            updateColors();
         }
 
         function addToggleSetting(category, id, description, regex) {
-            var state = getLocalSetting(id);
+            var state = getLocalSetting(id, true);
             var setting = document.createElement("div");
             var checkbox = document.createElement("checkbox");
 
@@ -120,6 +122,7 @@
                 <input type="checkbox" id="hmp-${id}" checked="${state ? "checked" : ""}" style="display: none;">`;
             setting.appendChild(checkbox);
             category.appendChild(setting);
+
             setting.onclick = function(e) {
                 var toggle = setting.getElementsByTagName("input")[0];
                 var newState = !toggle.checked;
@@ -130,32 +133,90 @@
                 checkbox.setAttribute("class", `checkbox ${newState ? "on" : "off"}`);
                 onSettingChanged(id, newState);
             };
+
             onSettingChanged(id, state);
             regexes.set(id, regex);
+            addColorPicker(category, id);
         }
 
-        function addColorSetting(menu) { //TODO
+        function addColorPicker(category, id) {
+            var savedColor = getLocalSetting(id + "-color", "#461b1b");
+            var colorSetting = document.createElement("div");
+            var colorPicker = document.createElement("input");
+            var previousColor;
+
+            colorPicker.setAttribute("id", id + "-picker");
+            colorSetting.setAttribute("style", 'padding-left: 80%');
+            colorSetting.appendChild(colorPicker);
+            category.appendChild(colorSetting);
+            colors.set(id, savedColor);
+
+            $(`#${id}-picker`).spectrum({
+                showInput: true,
+                preferredFormat: "hex",
+                color: savedColor,
+                containerClassName: "ews-color-picker",
+                replacerClassName: "ews-color-picker",
+                show: function(color) {
+                    previousColor = color.toHexString(); //save previous color so it can be reset if the user presses "cancel"
+                },
+                move: function(color) {
+                    saveColor(id, color);
+                },
+                change: function(color) {
+                    saveColor(id, color);
+                }
+            });
+
+            $(".sp-cancel").click(function() {
+                saveColor(id, previousColor); //reset color
+            });
+        }
+
+        function saveColor(id, color) {
+            setLocalSetting(id + "-color", color);
+            colors.set(id, color);
+            updateColors();
+        }
+
+        function updateColors() {
+            var css = "";
+
+            for(let key of colors.keys()) {
+                css += `.${key}-marked > .dialogNobody {background-color: ${colors.get(key)}}`; //css for highlighting messages
+            }
+
+            highlightStyle.innerHTML = css;
         }
 
         function setLocalSetting(setting, value) {
             localStorage.setItem(account.account.uid + "-hmp-" + setting, value);
         }
 
-        function getLocalSetting(setting) {
-            var storedState = localStorage.getItem(account.account.uid + "-hmp-" + setting);
+        function getLocalSetting(setting, defaultValue) {
+            var storedValue = localStorage.getItem(account.account.uid + "-hmp-" + setting);
 
-            if(storedState === null) {
-                setLocalSetting(setting, true);
-                return true;
+            if(storedValue === null) {
+                setLocalSetting(setting, defaultValue);
+                return defaultValue;
             }
             else {
-                return storedState === 'true';
+                return typeof defaultValue === "boolean" ? storedValue === "true" : storedValue;
             }
         }
 
         function onSettingChanged(id, state) { //trigger the ews-setting-changed event and update the lookup map with the new value
             $(document).trigger('ews-setting-changed', {setting: id, state: state});
             settings.set(id, state);
+        }
+
+        function addSpectrumCSS() {
+            var link = document.createElement("link");
+
+            link.setAttribute("href", "https://chrisraven.github.io/EyeWire-Custom-Highlight/spectrum.css?v=1");
+            link.setAttribute("rel", "stylesheet");
+            link.setAttribute("type", "text/css");
+            document.head.appendChild(link);
         }
     }
 })();
