@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Highlight My Points
 // @namespace    bl4ckscor3
-// @version      1.4
+// @version      1.4.1
 // @description  Highlights EyeWire chat messages announcing points the current user has earned.
 // @author       bl4ckscor3
 // @match        https://eyewire.org/
@@ -34,7 +34,7 @@
         const settings = new Map();
         const regexes = new Map();
         const colors = new Map();
-        const normalRegex = new RegExp(`${acc} earned [0-9]+ points`);
+        const normalRegex = new RegExp(`${acc} earned [0-9]+ points$`); //$ designates a string's ending
         const trailblazeRegex = new RegExp(`${acc} trailblazed a cube!`);
         const retroRegex = new RegExp(`${acc} earned [0-9]+ points from trailblazing`);
         const scoutRegex = new RegExp(`${acc} scouted a cube for [0-9]+ points\.?`); //not sure if this ends with a . or not, so i'm soft-requiring a dot here
